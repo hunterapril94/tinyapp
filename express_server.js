@@ -6,7 +6,7 @@ const getRandomString = function () {
   const options = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   for(let i = 0; i < 5; i++) {
     num = Math.floor(Math.random() * 62)
-    random += options(num)
+    random += options[num]
   }
   return random;
 }
@@ -20,7 +20,9 @@ const urlDatabase = {
 };
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  let shortUrl = getRandomString();
+  urlDatabase[shortUrl] = req.body.longURL
+  res.redirect(`urls/${shortUrl}`);         // Respond with 'Ok' (we will replace this)
 });
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -29,6 +31,11 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL]
+  res.redirect(longURL);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
