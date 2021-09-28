@@ -1,15 +1,15 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
-const getRandomString = function () {
-  let random = ""
-  const options = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-  for(let i = 0; i < 5; i++) {
-    num = Math.floor(Math.random() * 62)
-    random += options[num]
+const getRandomString = function() {
+  let random = "";
+  const options = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  for (let i = 0; i < 5; i++) {
+    let num = Math.floor(Math.random() * 62);
+    random += options[num];
   }
   return random;
-}
+};
 app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -21,23 +21,23 @@ const urlDatabase = {
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
   let shortUrl = getRandomString();
-  urlDatabase[shortUrl] = req.body.longURL
+  urlDatabase[shortUrl] = req.body.longURL;
   res.redirect(`urls/${shortUrl}`);         // Respond with 'Ok' (we will replace this)
 });
 
 app.post("/u/:shortURL", (req, res) => {
-  let shortURL = req.params.shortURL
-  urlDatabase[shortURL] = req.body.longURL
-  res.redirect('/urls')
-})
+  let shortURL = req.params.shortURL;
+  urlDatabase[shortURL] = req.body.longURL;
+  res.redirect('/urls');
+});
 
 
 app.post("/urls/:url/delete", (req, res) => {
-  const templateVars = { urls: urlDatabase }
-  let shortURL = req.params.url
-  delete urlDatabase[shortURL]
-  res.redirect("/urls")
-})
+  const templateVars = { urls: urlDatabase };
+  let shortURL = req.params.url;
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
+});
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -49,7 +49,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL]
+  const longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 });
 
