@@ -25,6 +25,13 @@ app.post("/urls", (req, res) => {
   res.redirect(`urls/${shortUrl}`);         // Respond with 'Ok' (we will replace this)
 });
 
+app.post("/u/:shortURL", (req, res) => {
+  let shortURL = req.params.shortURL
+  urlDatabase[shortURL] = req.body.longURL
+  res.redirect('/urls')
+})
+
+
 app.post("/urls/:url/delete", (req, res) => {
   const templateVars = { urls: urlDatabase }
   let shortURL = req.params.url
