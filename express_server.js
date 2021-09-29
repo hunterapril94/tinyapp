@@ -31,10 +31,10 @@ const users = {
   },
 };
 const emailLookup = (email) => {
-  let answer = false;
+  let answer = "";
   for(const userId in users) {
     if(users[userId].email === email) {
-      answer = true;
+      answer = users[userId];
     }
   }
   return answer;
@@ -46,7 +46,7 @@ app.post('/register', (req, res) => {
   if(email) {
     return res.status(400).send("user already exists. Please visit login page.")
   }
-  if(!req.body.email || req.body.password) {
+  if(!req.body.email || !req.body.password) {
     return res.status(400).send("email or password cannot be blank")
   }
 
@@ -84,13 +84,25 @@ app.post("/urls/:url/delete", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  res.cookie("userId", req.body.userId);
+  let email = emailLookup(req.body.email)
+  if(!email) {
+    return res.status(403).send('this user does not exist')
+  }
+  if(email.password !== req.body.password) {
+    return res.status(403).send('Password incorrect')
+  }
+  res.cookie("userId", email.userId);
   res.redirect("/urls");
 })
 
 app.post("/logout", (req, res) => {
   res.clearCookie("userId", req.cookies["userId"])
   res.redirect("/urls");
+})
+
+app.get('/login', (req, res) => {
+  const templateVars = {  userId: req.cookies["userId"] ? req.cookies["userId"] : "", email: req.cookies["userId"] ? users[req.cookies['userId']].email : "" };
+  res.render('login', templateVars)
 })
 
 app.get('/register', (req, res) => {
