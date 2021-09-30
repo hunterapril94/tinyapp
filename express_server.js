@@ -20,8 +20,14 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longUrl:"http://www.lighthouselabs.ca",
+    userId: "G57F3"
+  },
+  "9sm5xK": {
+    longUrl: "http://www.google.com",
+    userId: "G57F3" 
+  }
 };
 const users = {
   "G57F3": {
@@ -39,6 +45,16 @@ const emailLookup = (email) => {
   }
   return answer;
 } 
+const urlsForUserId = function(userId) {
+  let IdUrls = {};
+  for(const url in urlDatabase) {
+    if(urlDatabase[url].userId === userId) {
+      IdUrls[url] = urlDatabase[url].longUrl;
+    }
+  }
+  return IdUrls;
+} 
+
 app.post('/register', (req, res) => {
 
   let email = emailLookup(req.body.email);
@@ -63,20 +79,33 @@ app.post('/register', (req, res) => {
 })
 
 app.post("/urls", (req, res) => {
+  if(!req.cookies['userId']) {
+    return res.status(403).send("Please login to alter information")
+  }
   console.log(req.body);  // Log the POST request body to the console
   let shortUrl = getRandomString();
-  urlDatabase[shortUrl] = req.body.longURL;
+  urlDatabase[shortUrl].longURL = req.body.longURL;
   res.redirect(`urls/${shortUrl}`);         // Respond with 'Ok' (we will replace this)
 });
 
 app.post("/u/:shortURL", (req, res) => {
+  if(!req.cookies['userId']) {
+    return res.status(403).send("Please login to alter information")
+  } else if(req.cookies['userId'] !== urlDatabase[req.params.url].userId) {
+    return res.status(403).send("This user does not have authorization to change this information")
+  }
   let shortURL = req.params.shortURL;
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL].longURL = req.body.longURL;
   res.redirect('/urls');
 });
 
 
 app.post("/urls/:url/delete", (req, res) => {
+  if(!req.cookies['userId']) {
+    return res.status(403).send("Please login to alter information")
+  } else if(req.cookies['userId'] !== urlDatabase[req.params.url].userId) {
+    return res.status(403).send("This user does not have authorization to change this information")
+  }
   const templateVars = { urls: urlDatabase };
   let shortURL = req.params.url;
   delete urlDatabase[shortURL];
@@ -112,31 +141,34 @@ app.get('/register', (req, res) => {
 })
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, userId: req.cookies["userId"] ? req.cookies["userId"] : "", email: req.cookies["userId"] ? users[req.cookies['userId']].email : ""};
+  const templateVars = { urls: urlsForUserId(req.cookies["userId"]) ? urlsForUserId(req.cookies["userId"]) : "", userId: req.cookies["userId"] ? req.cookies["userId"] : "", email: req.cookies["userId"] ? users[req.cookies['userId']].email : ""};
 
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
   const templateVars = {  userId: req.cookies["userId"] ? req.cookies["userId"] : "", email: req.cookies["userId"] ? users[req.cookies['userId']].email : "" };
-  
+  if(!req.cookies['userId']) {
+    res.redirect("../urls")
+  } else {
   res.render("urls_new", templateVars);
+}
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longUrl;
 
   res.redirect(longURL);
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL], userId: req.cookies["userId"] ? req.cookies["userId"] : "", email: req.cookies["userId"] ? users[req.cookies['userId']].email : ""};
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longUrl, userId: req.cookies["userId"] ? req.cookies["userId"] : "", email: req.cookies["userId"] ? users[req.cookies['userId']].email : ""};
 
   res.render("urls_show", templateVars);
 });
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/urls");
 });
 
 app.get("/urls.json", (req, res) => {
