@@ -18,6 +18,9 @@ app.use(cookieParser())
 app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
+const bcrypt = require('bcryptjs');
+
+
 
 const urlDatabase = {
   "b2xVn2": {
@@ -68,12 +71,13 @@ app.post('/register', (req, res) => {
 
 
   let userId = getRandomString();
-
+  const hashedPassword = bcrypt.hashSync(req.body.password, 10);
   users[userId] = {
     userId: userId,
     email: req.body.email,
-    password: req.body.password
+    password: hashedPassword
   }
+  console.log(users)
   res.cookie("userId", userId)
   res.redirect('/urls')
 })
@@ -117,7 +121,8 @@ app.post("/login", (req, res) => {
   if(!email) {
     return res.status(403).send('this user does not exist')
   }
-  if(email.password !== req.body.password) {
+
+  if(!bcrypt.compareSync(req.body.password, email.password)) {
     return res.status(403).send('Password incorrect')
   }
   res.cookie("userId", email.userId);
