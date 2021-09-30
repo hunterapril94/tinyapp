@@ -13,10 +13,10 @@ const getRandomString = function() {
 
 
 
-const cookieParser = require('cookie-parser')
-const cookieSession = require('cookie-session')
-app.use(cookieSession({name: 'session', keys: ['secrets secrets hurt no one']}))
-app.use(cookieParser())
+const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
+app.use(cookieSession({name: 'session', keys: ['secrets secrets hurt no one']}));
+app.use(cookieParser());
 app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -31,7 +31,7 @@ const urlDatabase = {
   },
   "9sm5xK": {
     longUrl: "http://www.google.com",
-    userId: "G57F3" 
+    userId: "G57F3"
   }
 };
 const users = {
@@ -43,32 +43,32 @@ const users = {
 };
 const emailLookup = (email) => {
   let answer = "";
-  for(const userId in users) {
-    if(users[userId].email === email) {
+  for (const userId in users) {
+    if (users[userId].email === email) {
       answer = users[userId];
     }
   }
   return answer;
-} 
+};
 const urlsForUserId = function(userId) {
   let IdUrls = {};
-  for(const url in urlDatabase) {
-    if(urlDatabase[url].userId === userId) {
-      IdUrls[url] = urlDatabase[url]
+  for (const url in urlDatabase) {
+    if (urlDatabase[url].userId === userId) {
+      IdUrls[url] = urlDatabase[url];
     }
   }
   return IdUrls;
-} 
+};
 
 app.post('/register', (req, res) => {
 
   let email = emailLookup(req.body.email);
 
-  if(email) {
-    return res.status(400).send("user already exists. Please visit login page.")
+  if (email) {
+    return res.status(400).send("user already exists. Please visit login page.");
   }
-  if(!req.body.email || !req.body.password) {
-    return res.status(400).send("email or password cannot be blank")
+  if (!req.body.email || !req.body.password) {
+    return res.status(400).send("email or password cannot be blank");
   }
 
 
@@ -82,26 +82,26 @@ app.post('/register', (req, res) => {
   console.log(users);
   req.session.userId = userId;
   res.redirect('/urls');
-})
+});
 
 app.post("/urls", (req, res) => {
-  if(!req.session.userId) {
-    return res.status(403).send("Please login to alter information")
+  if (!req.session.userId) {
+    return res.status(403).send("Please login to alter information");
   }
   console.log(req.body);  // Log the POST request body to the console
   let shortUrl = getRandomString();
   urlDatabase[shortUrl] = {
     longUrl: req.body.longURL,
     userId: req.session.userId
-  }; 
+  };
   res.redirect(`urls`);         // Respond with 'Ok' (we will replace this)
 });
 
 app.post("/u/:shortURL", (req, res) => {
-  if(!req.session.userId) {
-    return res.status(403).send("Please login to alter information")
-  } else if(req.session.userId !== urlDatabase[req.params.shortURL].userId) {
-    return res.status(403).send("This user does not have authorization to change this information")
+  if (!req.session.userId) {
+    return res.status(403).send("Please login to alter information");
+  } else if (req.session.userId !== urlDatabase[req.params.shortURL].userId) {
+    return res.status(403).send("This user does not have authorization to change this information");
   }
   let shortURL = req.params.shortURL;
   urlDatabase[shortURL] = {
@@ -113,10 +113,10 @@ app.post("/u/:shortURL", (req, res) => {
 
 
 app.post("/urls/:url/delete", (req, res) => {
-  if(!req.session.userId) {
-    return res.status(403).send("Please login to alter information")
-  } else if(req.session.userId !== urlDatabase[req.params.url].userId) {
-    return res.status(403).send("This user does not have authorization to change this information")
+  if (!req.session.userId) {
+    return res.status(403).send("Please login to alter information");
+  } else if (req.session.userId !== urlDatabase[req.params.url].userId) {
+    return res.status(403).send("This user does not have authorization to change this information");
   }
   const templateVars = { urls: urlDatabase };
   let shortURL = req.params.url;
@@ -125,33 +125,33 @@ app.post("/urls/:url/delete", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  let email = emailLookup(req.body.email)
-  if(!email) {
-    return res.status(403).send('this user does not exist')
+  let email = emailLookup(req.body.email);
+  if (!email) {
+    return res.status(403).send('this user does not exist');
   }
 
-  if(!bcrypt.compareSync(req.body.password, email.password)) {
-    return res.status(403).send('Password incorrect')
+  if (!bcrypt.compareSync(req.body.password, email.password)) {
+    return res.status(403).send('Password incorrect');
   }
   req.session.userId = email.userId;
   res.redirect("/urls");
-})
+});
 
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/urls");
-})
+});
 
 app.get('/login', (req, res) => {
   const templateVars = {  userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : "" };
-  res.render('login', templateVars)
-})
+  res.render('login', templateVars);
+});
 
 app.get('/register', (req, res) => {
   const templateVars = {  userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : "" };
   res.render("user-registration", templateVars);
 
-})
+});
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlsForUserId(req.session.userId) ? urlsForUserId(req.session.userId) : "", userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : ""};
@@ -161,11 +161,11 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const templateVars = {  userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : "" };
-  if(!req.session.userId) {
-    res.redirect("../urls")
+  if (!req.session.userId) {
+    res.redirect("../urls");
   } else {
-  res.render("urls_new", templateVars);
-}
+    res.render("urls_new", templateVars);
+  }
 });
 
 app.get("/u/:shortURL", (req, res) => {
