@@ -1,17 +1,7 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
-const getRandomString = function() {
-  let random = "";
-  const options = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  for (let i = 0; i < 5; i++) {
-    let num = Math.floor(Math.random() * 62);
-    random += options[num];
-  }
-  return random;
-};
-
-
+const {  emailLookup, urlsForUserId, getRandomString} = require('./helperFunctions.js')
 
 const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
@@ -21,7 +11,6 @@ app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 const bcrypt = require('bcryptjs');
-
 
 
 const urlDatabase = {
@@ -41,28 +30,10 @@ const users = {
     password: "4321"
   },
 };
-const emailLookup = (email) => {
-  let answer = "";
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      answer = users[userId];
-    }
-  }
-  return answer;
-};
-const urlsForUserId = function(userId) {
-  let IdUrls = {};
-  for (const url in urlDatabase) {
-    if (urlDatabase[url].userId === userId) {
-      IdUrls[url] = urlDatabase[url];
-    }
-  }
-  return IdUrls;
-};
 
 app.post('/register', (req, res) => {
 
-  let email = emailLookup(req.body.email);
+  let email = emailLookup(req.body.email, users);
 
   if (email) {
     return res.status(400).send("user already exists. Please visit login page.");
@@ -125,7 +96,7 @@ app.post("/urls/:url/delete", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  let email = emailLookup(req.body.email);
+  let email = emailLookup(req.body.email, users);
   if (!email) {
     return res.status(403).send('this user does not exist');
   }
@@ -154,7 +125,7 @@ app.get('/register', (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlsForUserId(req.session.userId) ? urlsForUserId(req.session.userId) : "", userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : ""};
+  const templateVars = { urls: urlsForUserId(req.session.userId, urlDatabase) ? urlsForUserId(req.session.userId, urlDatabase) : "", userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : ""};
 
   res.render("urls_index", templateVars);
 });
