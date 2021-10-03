@@ -18,7 +18,7 @@
         <p class="card-text">Short URL: <a href="/u/<%= shortURL %>"><%= shortURL %></a></p>
         <form method="POST" action="/u/<%= shortURL %>">
           <button name="submit">Update</button>
-          <input class="form-control" type="text" name="longURL" placeholder="http://" style="width: 300px; margin: 1em">
+          <input class="form-control" type="text" name="longURL" placeholder="<%= longURL%>" style="width: 300px; margin: 1em">
         </form>
         <% } %>
       </div>

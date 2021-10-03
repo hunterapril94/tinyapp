@@ -8,7 +8,6 @@ const {  emailLookup, urlsForUserId, getRandomString} = require('./helperFunctio
 //middleware
 const cookieSession = require('cookie-session');
 app.use(cookieSession({name: 'session', keys: ['secrets secrets hurt no one']}));
-app.use(cookieParser());
 app.set("view engine", "ejs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -25,14 +24,14 @@ const users = {
 // begin post results
 
 app.post('/register', (req, res) => {
-
+  //check for email in database
   let email = emailLookup(req.body.email, users);
 
   if (email) {
-    return res.status(400).send("user already exists. Please visit login page.");
+    return res.status(400).send("User already exists. Please visit login page.");
   }
   if (!req.body.email || !req.body.password) {
-    return res.status(400).send("email or password cannot be blank");
+    return res.status(400).send("Email or password cannot be blank");
   }
   let userId = getRandomString();
   const hashedPassword = bcrypt.hashSync(req.body.password, 10);
@@ -46,8 +45,8 @@ app.post('/register', (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  if (!req.session.userId) {
-    return res.status(403).send("Please login to alter information");
+  if(!users[req.session.userId]) {
+    req.session = null;
   }
   let shortUrl = getRandomString();
   urlDatabase[shortUrl] = {
@@ -58,7 +57,10 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/u/:shortURL", (req, res) => {
-  if (!req.session.userId) {
+  if(!users[req.session.userId]) {
+    req.session = null;
+  }
+  if (!req.session) {
     return res.status(403).send("Please login to alter information");
   } else if (req.session.userId !== urlDatabase[req.params.shortURL].userId) {
     return res.status(403).send("This user does not have authorization to change this information");
@@ -73,7 +75,9 @@ app.post("/u/:shortURL", (req, res) => {
 
 
 app.post("/urls/:url/delete", (req, res) => {
-  if (!req.session.userId) {
+  if(!users[req.session.userId]) {
+    req.session = null;
+  } else if (!req.session.userId) {
     return res.status(403).send("Please login to alter information");
   } else if (req.session.userId !== urlDatabase[req.params.url].userId) {
     return res.status(403).send("This user does not have authorization to change this information");
@@ -85,6 +89,9 @@ app.post("/urls/:url/delete", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
+  if(!users[req.session.userId]) {
+    req.session = null;
+  }
   let email = emailLookup(req.body.email, users);
   if (!email) {
     return res.status(403).send('this user does not exist');
@@ -105,16 +112,22 @@ app.post("/logout", (req, res) => {
 //end post results. Begin get results
 
 app.get('/login', (req, res) => {
-  const templateVars = {  userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : "" };
-  if (req.session.userId) {
+  if(!users[req.session.userId]) {
+    req.session = null;
+  }
+  const templateVars = {  userId: req.session ? req.session.userId : "", email: req.session ? users[req.session.userId].email : "" };
+  if (req.session || req.session.userId) {
     res.redirect('/urls');
   }
   res.render('login', templateVars);
 });
 
 app.get('/register', (req, res) => {
-  const templateVars = {  userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : "" };
-  if (req.session.userId) {
+  if(!users[req.session.userId]) {
+    req.session = null;
+  }
+  const templateVars = {  userId: req.session ? req.session.userId : "", email: req.session ? users[req.session.userId].email : "" };
+  if (req.session) {
     res.redirect('/urls');
   }
   res.render("user-registration", templateVars);
@@ -122,14 +135,20 @@ app.get('/register', (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlsForUserId(req.session.userId, urlDatabase) ? urlsForUserId(req.session.userId, urlDatabase) : "", userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : ""};
+  if(!users[req.session.userId]) {
+    req.session = null;
+  } 
+  const templateVars = { urls: req.session ? urlsForUserId(req.session.userId, urlDatabase) : "", userId: req.session ? req.session.userId : "", email: req.session ? users[req.session.userId].email : ""};
 
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = {  userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : "" };
-  if (!req.session.userId) {
+  if(!users[req.session.userId]) {
+    req.session = null;
+  }
+  const templateVars = {  userId: req.session ? req.session.userId : "", email: req.session ? users[req.session.userId].email : "" };
+  if (!req.session) {
     res.redirect("../login");
   } else {
     res.render("urls_new", templateVars);
@@ -137,6 +156,9 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
+  if(!users[req.session.userId]) {
+    req.session = null;
+  }
 
   if (!urlDatabase[req.params.shortURL]) {
     return res.send('This Tiny URL does not exist. Please try again.');
@@ -147,14 +169,22 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] ? urlDatabase[req.params.shortURL].longUrl : "", userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : ""};
-  if (!req.session.userId || req.session.userId === urlDatabase[req.params.shortURL].userId) {
+  if(!users[req.session.userId]) {
+    req.session = null;
+  }
+  const templateVars = { shortURL: urlDatabase[req.params.shortURL] ? req.params.shortURL : "", longURL: urlDatabase[req.params.shortURL] ? urlDatabase[req.params.shortURL].longUrl : "", userId: req.session ? req.session.userId : "", email: req.session ? users[req.session.userId].email : ""};
+  if (!urlDatabase[req.params.shortURL]) {
+    res.send("URL does not exist in database. Please try again.")
+  } else if (!req.session || req.session.userId !== urlDatabase[req.params.shortURL].userId) {
     res.send('Cannot make changes to a URL you do not own.');
   }
   res.render("urls_show", templateVars);
 });
 
 app.get("/", (req, res) => {
+  if(!users[req.session.userId]) {
+    req.session = null;
+  }
   if (!req.session.userId) {
     return res.redirect('/login');
   }
