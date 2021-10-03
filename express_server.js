@@ -1,9 +1,11 @@
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080;
+
+// outside functions stored for modularity
 const {  emailLookup, urlsForUserId, getRandomString} = require('./helperFunctions.js');
 
-const cookieParser = require('cookie-parser');
+//middleware
 const cookieSession = require('cookie-session');
 app.use(cookieSession({name: 'session', keys: ['secrets secrets hurt no one']}));
 app.use(cookieParser());
@@ -12,24 +14,15 @@ const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 const bcrypt = require('bcryptjs');
 
-
+//database
 const urlDatabase = {
-  "b2xVn2": {
-    longUrl:"http://www.lighthouselabs.ca",
-    userId: "G57F3"
-  },
-  "9sm5xK": {
-    longUrl: "http://www.google.com",
-    userId: "G57F3"
-  }
+
 };
 const users = {
-  "G57F3": {
-    userId: "G57F3",
-    email: "hi@hi.com",
-    password: "4321"
-  },
+
 };
+
+// begin post results
 
 app.post('/register', (req, res) => {
 
@@ -48,7 +41,6 @@ app.post('/register', (req, res) => {
     email: req.body.email,
     password: hashedPassword
   };
-  console.log(users);
   req.session.userId = userId;
   res.redirect('/urls');
 });
@@ -57,7 +49,6 @@ app.post("/urls", (req, res) => {
   if (!req.session.userId) {
     return res.status(403).send("Please login to alter information");
   }
-  console.log(req.body);
   let shortUrl = getRandomString();
   urlDatabase[shortUrl] = {
     longUrl: req.body.longURL,
@@ -110,6 +101,8 @@ app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/urls");
 });
+
+//end post results. Begin get results
 
 app.get('/login', (req, res) => {
   const templateVars = {  userId: req.session.userId ? req.session.userId : "", email: req.session.userId ? users[req.session.userId].email : "" };
@@ -172,9 +165,7 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
+//end get
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
