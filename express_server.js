@@ -100,7 +100,7 @@ app.post("/login", (req, res) => {
   if (!bcrypt.compareSync(req.body.password, email.password)) {
     return res.status(403).send('Password incorrect');
   }
-  req.session.userId = email.userId;
+  req.session = {userId: email.userId}
   res.redirect("/urls");
 });
 
@@ -112,11 +112,11 @@ app.post("/logout", (req, res) => {
 //end post results. Begin get results
 
 app.get('/login', (req, res) => {
-  if(!users[req.session.userId]) {
+  if(req.session) {
     req.session = null;
   }
   const templateVars = {  userId: req.session ? req.session.userId : "", email: req.session ? users[req.session.userId].email : "" };
-  if (req.session || req.session.userId) {
+  if (req.session) {
     res.redirect('/urls');
   }
   res.render('login', templateVars);
@@ -184,8 +184,8 @@ app.get("/urls/:shortURL", (req, res) => {
 app.get("/", (req, res) => {
   if(!users[req.session.userId]) {
     req.session = null;
-  }
-  if (!req.session.userId) {
+  } 
+  if (!req.session) {
     return res.redirect('/login');
   }
   res.redirect("/urls");
