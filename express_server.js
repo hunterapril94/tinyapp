@@ -26,7 +26,7 @@ const users = {
 app.post('/register', (req, res) => {
   //check for email in database
   let email = emailLookup(req.body.email, users);
-
+  //handle errors
   if (email) {
     return res.status(400).send("User already exists. Please visit login page.");
   }
@@ -35,6 +35,8 @@ app.post('/register', (req, res) => {
   }
   let userId = getRandomString();
   const hashedPassword = bcrypt.hashSync(req.body.password, 10);
+
+  //sets new user in database
   users[userId] = {
     userId: userId,
     email: req.body.email,
@@ -45,6 +47,7 @@ app.post('/register', (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
+  //resets session to null if user Id is not in database. Mostly in case the server restarts
   if(!users[req.session.userId]) {
     req.session = null;
   }
@@ -60,6 +63,8 @@ app.post("/u/:shortURL", (req, res) => {
   if(!users[req.session.userId]) {
     req.session = null;
   }
+
+  // handle errors
   if (!req.session) {
     return res.status(403).send("Please login to alter information");
   } else if (req.session.userId !== urlDatabase[req.params.shortURL].userId) {
@@ -75,6 +80,7 @@ app.post("/u/:shortURL", (req, res) => {
 
 
 app.post("/urls/:url/delete", (req, res) => {
+  //handle errors
   if(!users[req.session.userId]) {
     req.session = null;
   } else if (!req.session.userId) {
@@ -159,7 +165,7 @@ app.get("/u/:shortURL", (req, res) => {
   if(!users[req.session.userId]) {
     req.session = null;
   }
-
+  //runs error if typed url doesn't match database
   if (!urlDatabase[req.params.shortURL]) {
     return res.send('This Tiny URL does not exist. Please try again.');
   }
@@ -173,6 +179,7 @@ app.get("/urls/:shortURL", (req, res) => {
     req.session = null;
   }
   const templateVars = { shortURL: urlDatabase[req.params.shortURL] ? req.params.shortURL : "", longURL: urlDatabase[req.params.shortURL] ? urlDatabase[req.params.shortURL].longUrl : "", userId: req.session ? req.session.userId : "", email: req.session ? users[req.session.userId].email : ""};
+  //handle errors
   if (!urlDatabase[req.params.shortURL]) {
     res.send("URL does not exist in database. Please try again.")
   } else if (!req.session || req.session.userId !== urlDatabase[req.params.shortURL].userId) {
